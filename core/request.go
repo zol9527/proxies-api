@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-24 16:14:45
+ * :LastEditTime :2023-05-25 17:50:44
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -19,7 +19,7 @@ import (
 )
 
 /* 获取 IP  */
-func RequestIP(trans_chan chan string, stop_signal chan string, wg *sync.WaitGroup) {
+func RequestIP(stop_signal chan string, wg *sync.WaitGroup) {
 
 	wg.Add(1)
 loop_request_ip:
@@ -36,14 +36,22 @@ loop_request_ip:
 		// 解析 IP
 		ip := strings.TrimSpace(r.Text)
 
-		// 发送 IP
+		// 添加进入 Pool
+		locker.Lock()
+		Pool = append(Pool, IP{
+			Ip:     ip,
+			Start:  time.Now(),
+			Domain: []domain_info{},
+		})
+		locker.Unlock()
+
+		// 检查是否有停止信号
 		select {
-		case trans_chan <- ip:
-			println("send ip: ", ip)
 		case _, ok := <-stop_signal:
 			if !ok {
 				break loop_request_ip
 			}
+		default:
 		}
 
 		// 休眠 1 秒
