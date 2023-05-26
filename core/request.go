@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-25 17:50:44
+ * :LastEditTime :2023-05-26 11:29:28
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -25,6 +25,12 @@ func RequestIP(stop_signal chan string, wg *sync.WaitGroup) {
 loop_request_ip:
 
 	for {
+		// 查看 POOL 里面的数量
+		if len(Pool) >= 100 {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
 		url := ""
 		r, err := requests.Get(url, nil)
 		if err != nil {
