@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-29 13:54:10
+ * :LastEditTime :2023-05-29 14:16:00
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -78,10 +78,13 @@ func core(w http.ResponseWriter, r *http.Request) {
 	// 取出 IP 池中的第一个 IP
 	ip := Pool[0]
 
+	// Exist time
+	exist_time := tree.Get("ip.exist_time").(int)
+
 	// 获取时间信息
 	now := time.Now()
 	start := ip.Start
-	end := start.Add(900 * time.Second)
+	end := start.Add(time.Duration(exist_time) * time.Second)
 
 	// IP 不在有效期内, 从 IP 池中删除
 	if now.After(end) {
