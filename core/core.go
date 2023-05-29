@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-28 12:38:05
+ * :LastEditTime :2023-05-29 13:54:10
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -12,7 +12,9 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -31,6 +33,11 @@ type IP struct {
 type IPResponse struct {
 	Http  string `json:"http"`
 	Https string `json:"https"`
+}
+
+type Response struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 /* 定义重要参数 */
@@ -130,7 +137,11 @@ func core(w http.ResponseWriter, r *http.Request) {
 
 func Server() {
 
+	// 获取 port
+	port_str := tree.Get("server.port").(int)
+	port := strconv.Itoa(port_str)
+
 	http.HandleFunc("/get", core)
-	http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
 
 }
