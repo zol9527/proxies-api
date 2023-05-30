@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-30 23:25:16
+ * :LastEditTime :2023-05-30 23:28:55
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -54,6 +54,7 @@ loop_request_ip:
 		log.Debug("服务器返回: ", ip)
 		// 使用正则表达式，查看是否是 IPv4
 		if !IsIPv4(ip) {
+			time.Sleep(1 * time.Second)
 			continue loop_request_ip
 		}
 		total += 1
