@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-29 14:16:00
+ * :LastEditTime :2023-05-30 17:56:55
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -79,7 +79,7 @@ func core(w http.ResponseWriter, r *http.Request) {
 	ip := Pool[0]
 
 	// Exist time
-	exist_time := tree.Get("ip.exist_time").(int)
+	exist_time := tree.Get("ip.exist_time").(int64)
 
 	// 获取时间信息
 	now := time.Now()
@@ -141,8 +141,8 @@ func core(w http.ResponseWriter, r *http.Request) {
 func Server() {
 
 	// 获取 port
-	port_str := tree.Get("server.port").(int)
-	port := strconv.Itoa(port_str)
+	port_str := tree.Get("server.port").(int64)
+	port := strconv.FormatInt(port_str, 10)
 
 	http.HandleFunc("/get", core)
 	http.ListenAndServe(fmt.Sprintf(":%s", port), nil)

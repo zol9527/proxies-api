@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-28 01:10:23
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-29 12:00:31
+ * :LastEditTime :2023-05-30 22:29:16
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -39,8 +39,14 @@ func (m *MyFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 var log *logrus.Logger
 
 func init() {
+	// log = &logrus.Logger{
+	// 	Out:       os.Stdout,
+	// 	Formatter: &MyFormatter{},
+	// 	Level:     logrus.DebugLevel,
+	// }
 	log = logrus.New()
-	log.Out = os.Stdout
-	log.Formatter = new(MyFormatter)
-	log.Level = logrus.DebugLevel
+	log.SetOutput(os.Stdout)
+	log.SetFormatter(&MyFormatter{})
+	log.SetLevel(logrus.DebugLevel)
+	log.SetReportCaller(true)
 }

@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-29 11:58:21
+ * :LastEditTime :2023-05-30 17:59:28
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -36,7 +36,8 @@ loop_request_ip:
 
 	for {
 		// 查看 POOL 里面的数量
-		if len(Pool) >= tree.Get("pool.size").(int) {
+
+		if int64(len(Pool)) >= tree.Get("pool.size").(int64) {
 			time.Sleep(1 * time.Second)
 			continue
 		}
