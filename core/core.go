@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-30 17:56:55
+ * :LastEditTime :2023-05-30 23:08:58
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -42,8 +42,7 @@ type Response struct {
 
 /* 定义重要参数 */
 var (
-	one    sync.Once
-	locker sync.Mutex
+	locker = sync.Mutex{}
 	Pool   = make([]IP, 0)
 )
 

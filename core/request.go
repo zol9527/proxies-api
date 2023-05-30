@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-30 22:36:47
+ * :LastEditTime :2023-05-30 23:10:49
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -49,7 +49,6 @@ loop_request_ip:
 			continue loop_request_ip
 		}
 
-		locker.Lock()
 		// 解析 IP
 		ip := strings.TrimSpace(r.Text)
 		// 使用正则表达式，查看是否是 IPv4
@@ -60,6 +59,7 @@ loop_request_ip:
 		log.Debugf("获取到 IP: %s, 累积数量: %d", ip, total)
 
 		// 添加 IP 进入 Pool
+		locker.Lock()
 		Pool = append(Pool, IP{
 			Ip:     ip,
 			Start:  time.Now(),
