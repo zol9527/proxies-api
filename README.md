@@ -4,10 +4,16 @@
 
 ## :fire: 使用
 
-```python
-# 192.168.2.211:8000/get?domain=baidu.com
-requests.get("url", params={"domain": "baidu.com"})
-```
+1. 保证代理服务商获取的 `ip` 格式: `<xxx.xxx.xxx.xxx:ip_v4>:<xxx:port>`
+
+2. 在本地或则服务器上运行本程序
+
+3. 使用程序请求
+
+    ```python
+    # 192.168.2.211:8000/get?domain=baidu.com
+    requests.get("url", params={"domain": "baidu.com"})
+    ```
 
 ## :robot: 设置
 
@@ -16,3 +22,7 @@ requests.get("url", params={"domain": "baidu.com"})
 - [x] 每个域名的IP使用间隔
 - [x] 每个IP的存活时间
 - [x] IP池大小
+
+## :warning: 注意
+
+请下载最新版本
