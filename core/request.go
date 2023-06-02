@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-30 23:28:55
+ * :LastEditTime :2023-06-01 16:56:00
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -63,9 +63,8 @@ loop_request_ip:
 		// 添加 IP 进入 Pool
 		locker.Lock()
 		Pool = append(Pool, IP{
-			Ip:     ip,
-			Start:  time.Now(),
-			Domain: []domain_info{},
+			IP:    ip,
+			Start: time.Now(),
 		})
 		locker.Unlock()
 
