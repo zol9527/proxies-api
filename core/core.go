@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-02 14:51:57
+ * :LastEditTime :2023-06-02 15:32:41
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -152,6 +152,20 @@ func core(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("IP 池为空"))
 		return
 	}
+
+	// 遍历 Pool，插件每个 IP 的 Start 时间
+	tmp := make([]IP, 0)
+	exist_time := tree.Get("ip.exist_time").(int64)
+	for i, ip := range Pool {
+		// 如果超过最大存活时间则删除
+		if time.Now().After(ip.Start.Add(time.Duration(exist_time) * time.Second)) {
+			continue
+		}
+		// 如果没有超过最大存活时间则添加到临时切片中
+		tmp = append(tmp, Pool[i])
+	}
+	// 更新 Pool
+	Pool = tmp
 
 	// 同步 IP 到 Domain Pool 中
 	syncIP(domainStr)
