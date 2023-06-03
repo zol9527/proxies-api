@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-28 01:10:23
  * :LastEditors  :loyd
- * :LastEditTime :2023-05-30 22:29:16
+ * :LastEditTime :2023-06-03 12:43:52
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -29,7 +29,7 @@ func (m *MyFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	timestamp := entry.Time.Format("2006-01-02 15:04:05")
-	newLog := fmt.Sprintf("[%s]: %s - [%s:%d] %s\n", entry.Level, timestamp, entry.Caller.File, entry.Caller.Line, entry.Message)
+	newLog := fmt.Sprintf("[%s]: %s - %s\n", entry.Level, timestamp, entry.Message)
 
 	b.WriteString(newLog)
 	return b.Bytes(), nil

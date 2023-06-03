@@ -3,10 +3,10 @@ port = 8000
 
 [pool]
 size = 2
-delay = 5
+delay = 2
 
 [proxy]
 url = "http://dw.tiqu.letecs.com/getip_cm?num=1&type=1&pro=&city=0&yys=0&port=1&pack=238257&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions=&code=aa604xkzbd"
 
 [ip]
-exist_time = 720
+exist_time = 20

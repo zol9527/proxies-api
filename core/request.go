@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-01 16:56:00
+ * :LastEditTime :2023-06-03 13:28:52
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -35,38 +35,40 @@ func RequestIP() {
 loop_request_ip:
 
 	for {
-		// 查看 POOL 里面的数量
+		// 获取 IP 池中 IP 数量
+		ip_pool_size := countPool()
 
-		if int64(len(Pool)) >= tree.Get("pool.size").(int64) {
-			time.Sleep(1 * time.Second)
+		// 保证 IP 池的数量不超过最大值
+		if ip_pool_size >= Settings.Get("pool.size").(int64) {
+			time.Sleep(2 * time.Second)
 			continue
 		}
 
 		// 请求代理网址
-		r, err := requests.Get(tree.Get("proxy.url").(string), nil)
+		r, err := requests.Get(Settings.Get("proxy.url").(string), nil)
 		if err != nil {
 			log.Error("请求代理网址失败: ", err)
 			continue loop_request_ip
 		}
 
-		// 解析 IP
+		// 解析返回的数据
 		ip := strings.TrimSpace(r.Text)
 		log.Debug("服务器返回: ", ip)
-		// 使用正则表达式，查看是否是 IPv4
+
+		// 验证 IP 是否合法
 		if !IsIPv4(ip) {
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * time.Second)
 			continue loop_request_ip
 		}
+
 		total += 1
 		log.Debugf("获取到 IP: %s, 累积数量: %d", ip, total)
 
-		// 添加 IP 进入 Pool
-		locker.Lock()
-		Pool = append(Pool, IP{
-			IP:    ip,
-			Start: time.Now(),
-		})
-		locker.Unlock()
+		// 添加 IP 到 IP 池
+		now := time.Now()
+		Locker.Lock()
+		Pool.Store(ip, now)
+		Locker.Unlock()
 
 		// 休眠 1 秒
 		time.Sleep(1 * time.Second)

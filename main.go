@@ -25,6 +25,7 @@ func main() {
 	go core.RequestIP()
 	// 运行IP HTTP Server
 	go core.Server()
+	go core.SyncInOne()
 
 	// 受到 signal 信号后，关闭通道
 	sigs := make(chan os.Signal, 1)
