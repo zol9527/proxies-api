@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-03 13:29:13
+ * :LastEditTime :2023-06-04 00:34:14
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -17,22 +17,6 @@ import (
 	"strconv"
 	"time"
 )
-
-// type IP struct {
-// 	IP    string
-// 	Start time.Time
-// }
-
-// type DomainIP struct {
-// 	IP      string
-// 	Start   time.Time
-// 	LastUse time.Time
-// }
-
-// type Domain struct {
-// 	Domain string
-// 	IPPool []DomainIP
-// }
 
 type IPResponse struct {
 	Http  string `json:"http"`
@@ -57,15 +41,16 @@ func core(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 获取 Domain pool
-	d_pool, _ := DomainPool.LoadOrStore(domainStr, make([]DomainIP, 0))
-	if len(d_pool.([]DomainIP)) == 0 {
+	// 确保 domain str 在 DomainPool 中
+	d_pool, ok := DomainPool[domainStr]
+	if !ok {
+		DomainPool[domainStr] = make([]DomainIP, 0)
 		w.Write([]byte("当前 IP 池为空"))
 		return
 	}
 
 	// 从 d_pool 中获取第一个 IP
-	ip := d_pool.([]DomainIP)[0]
+	ip := d_pool[0]
 
 	// 验证 ip 的 LastUse 是否超时
 	delay := Settings.Get("pool.delay").(int64)
@@ -75,9 +60,9 @@ func core(w http.ResponseWriter, r *http.Request) {
 	if now.Sub(ip.LastUse).Seconds() > float64(delay) {
 		// 调整 ip 位置
 		ip.LastUse = now
-		new_ips := append(d_pool.([]DomainIP)[:0], d_pool.([]DomainIP)[1:]...)
+		new_ips := append(d_pool[:0], d_pool[1:]...)
 		new_ips = append(new_ips, ip)
-		DomainPool.Store(domainStr, new_ips)
+		DomainPool[domainStr] = new_ips
 		// 返回 IP
 		w.Header().Set("Content-Type", "application/json")
 		response := IPResponse{Http: ip.IP, Https: ip.IP}
@@ -90,9 +75,9 @@ func core(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// 小于 delay, 返回错误
 		// 调整位置后继续
-		new_ips := append(d_pool.([]DomainIP)[:0], d_pool.([]DomainIP)[1:]...)
+		new_ips := append(d_pool[:0], d_pool[1:]...)
 		new_ips = append(new_ips, ip)
-		DomainPool.Store(domainStr, new_ips)
+		DomainPool[domainStr] = new_ips
 		w.Write([]byte("当前 IP 未到可用时间"))
 	}
 }

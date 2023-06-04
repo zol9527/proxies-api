@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 16:36:42
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-03 13:01:28
+ * :LastEditTime :2023-06-04 10:49:49
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -17,18 +17,18 @@ import (
 	"github.com/pelletier/go-toml"
 )
 
-type IP struct {
-	IP    string
-	Start time.Time
+type NewIP struct {
+	IP          string
+	AcquireTime time.Time
 }
 
 type DomainIP struct {
-	IP      string
-	Start   time.Time
-	LastUse time.Time
+	IP          string
+	AcquireTime time.Time
+	LastUse     time.Time
 }
 
-type Domain struct {
+type NewDomainPool struct {
 	Domain string
 	IPPool []DomainIP
 }
@@ -36,9 +36,10 @@ type Domain struct {
 var (
 	// IP 池
 	Pool = sync.Map{}
-	// Domain 池 {"domain": []DomainIP}
-	DomainPool = sync.Map{}
+	// Domain 池
+	DomainPool = make(map[string][]DomainIP)
 	// 动态读取的配置文件
 	Settings *toml.Tree
 	Locker   sync.Mutex
+	SyncPipe = make(chan NewIP)
 )

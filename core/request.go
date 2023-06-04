@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-03 13:28:52
+ * :LastEditTime :2023-06-03 15:51:03
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -66,9 +66,11 @@ loop_request_ip:
 
 		// 添加 IP 到 IP 池
 		now := time.Now()
-		Locker.Lock()
-		Pool.Store(ip, now)
-		Locker.Unlock()
+		new_ip := NewIP{
+			IP:          ip,
+			AcquireTime: now,
+		}
+		SyncPipe <- new_ip
 
 		// 休眠 1 秒
 		time.Sleep(1 * time.Second)
