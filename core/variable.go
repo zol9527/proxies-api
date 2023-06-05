@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 16:36:42
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-04 10:49:49
+ * :LastEditTime :2023-06-05 09:58:04
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -41,5 +41,5 @@ var (
 	// 动态读取的配置文件
 	Settings *toml.Tree
 	Locker   sync.Mutex
-	SyncPipe = make(chan NewIP)
+	SyncPipe = make(chan NewIP, 100)
 )

@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 16:38:33
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-04 11:07:51
+ * :LastEditTime :2023-06-05 15:09:01
  * :Description  :同步 IP 到 Domain Pool 中
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -19,6 +19,8 @@ import (
 /* 动态读取配置文件 */
 func SyncSettings() {
 	timer := time.NewTicker(time.Second * 10)
+	defer timer.Stop()
+
 	for range timer.C {
 		Settings, _ = toml.LoadFile("project.toml")
 		log.Debug("配置文件已更新")
@@ -35,7 +37,9 @@ func inDomainPool(slice []DomainIP, ip string) bool {
 }
 
 func SyncIP() {
-	timer := time.NewTicker(time.Second * 3)
+	timer := time.NewTicker(time.Second * 2)
+	defer timer.Stop()
+
 	for range timer.C {
 
 		if len(SyncPipe) > 0 {
@@ -48,8 +52,14 @@ func SyncIP() {
 			now := time.Now()
 
 			// 更新 ip
-			for ip := range SyncPipe {
-				Pool.Store(ip.IP, ip.AcquireTime)
+		Loop:
+			for {
+				select {
+				case ip := <-SyncPipe:
+					Pool.Store(ip.IP, ip.AcquireTime)
+				default:
+					break Loop
+				}
 			}
 
 			// 删除过期的 ip

@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-03 15:51:03
+ * :LastEditTime :2023-06-05 14:46:03
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -39,7 +39,8 @@ loop_request_ip:
 		ip_pool_size := countPool()
 
 		// 保证 IP 池的数量不超过最大值
-		if ip_pool_size >= Settings.Get("pool.size").(int64) {
+		setting_pool_size := Settings.Get("pool.size").(int64)
+		if ip_pool_size >= setting_pool_size {
 			time.Sleep(2 * time.Second)
 			continue
 		}

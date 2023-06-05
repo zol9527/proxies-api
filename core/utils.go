@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 17:05:47
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-03 13:00:30
+ * :LastEditTime :2023-06-05 10:00:01
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -18,13 +18,4 @@ func countPool() int64 {
 		return true
 	})
 	return int64(pool_size)
-}
-
-/* 转换切片为 map */
-func to_map(s []DomainIP) map[string]bool {
-	m := make(map[string]bool)
-	for _, ip := range s {
-		m[ip.IP] = true
-	}
-	return m
 }
