@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-04 00:34:14
+ * :LastEditTime :2023-06-06 11:42:49
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -49,6 +49,12 @@ func core(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 确保 d_pool 中有一个以上的 IP
+	if len(d_pool) == 0 {
+		w.Write([]byte("当前 IP 池为空"))
+		return
+	}
+
 	// 从 d_pool 中获取第一个 IP
 	ip := d_pool[0]
 
@@ -72,6 +78,7 @@ func core(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write(jsonData)
+		return
 	} else {
 		// 小于 delay, 返回错误
 		// 调整位置后继续
@@ -79,6 +86,7 @@ func core(w http.ResponseWriter, r *http.Request) {
 		new_ips = append(new_ips, ip)
 		DomainPool[domainStr] = new_ips
 		w.Write([]byte("当前 IP 未到可用时间"))
+		return
 	}
 }
 

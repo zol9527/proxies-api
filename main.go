@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:29:39
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-04 10:47:05
+ * :LastEditTime :2023-06-06 11:47:07
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -26,6 +26,7 @@ func main() {
 	// 运行IP HTTP Server
 	go core.Server()
 	go core.SyncIP()
+	go core.SyncSettings()
 
 	// 受到 signal 信号后，关闭通道
 	sigs := make(chan os.Signal, 1)
