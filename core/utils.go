@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 17:05:47
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-05 10:00:01
+ * :LastEditTime :2023-07-13 17:05:45
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -10,12 +10,26 @@
 
 package core
 
+import (
+	"ip-controller/pool"
+	"net"
+	"strings"
+)
+
 /* 计算 IP 池大小 */
-func countPool() int64 {
+func getPoolSize() int64 {
 	pool_size := 0
-	Pool.Range(func(key, value interface{}) bool {
+	pool.MemoryPool.Range(func(key, value interface{}) bool {
 		pool_size++
 		return true
 	})
 	return int64(pool_size)
+}
+
+/* 判断是否是 ip */
+func isIPv4(ip string) bool {
+	// IP 可能是 ip:port 的形式，用:分割
+	ip_v4 := strings.Split(ip, ":")[0]
+	result := net.ParseIP(ip_v4)
+	return result != nil
 }

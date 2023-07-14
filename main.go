@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:29:39
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-06 11:47:07
+ * :LastEditTime :2023-07-14 11:09:22
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -12,6 +12,7 @@ package main
 
 import (
 	"ip-controller/core"
+	_ "ip-controller/init"
 	"os"
 	"os/signal"
 	"syscall"

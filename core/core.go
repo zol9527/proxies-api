@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-06-06 11:42:49
+ * :LastEditTime :2023-06-30 16:14:24
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -16,6 +16,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type IPResponse struct {
@@ -28,8 +30,13 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+type Query struct {
+	Domain string `form:"domain"`
+	Delay int64 `form:"delay, default=12"`
+}
+
 /* 获取IP */
-func core(w http.ResponseWriter, r *http.Request) {
+func core(c *gin.Context) {
 
 	Locker.Lock()
 	defer Locker.Unlock()
@@ -44,7 +51,7 @@ func core(w http.ResponseWriter, r *http.Request) {
 	// 确保 domain str 在 DomainPool 中
 	d_pool, ok := DomainPool[domainStr]
 	if !ok {
-		DomainPool[domainStr] = make([]DomainIP, 0)
+		DomainPool[domainStr] = make([]IPInDomain, 0)
 		w.Write([]byte("当前 IP 池为空"))
 		return
 	}
@@ -96,7 +103,11 @@ func Server() {
 	port_str := Settings.Get("server.port").(int64)
 	port := strconv.FormatInt(port_str, 10)
 
-	http.HandleFunc("/get", core)
-	http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	r := gin.New()
 
+	// 路由
+	r.GET("/get", core)
+	
+	// 启动
+	r.Run(fmt.Sprintf(":%s", port))
 }
