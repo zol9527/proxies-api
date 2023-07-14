@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 16:38:33
  * :LastEditors  :loyd
- * :LastEditTime :2023-07-14 17:56:24
+ * :LastEditTime :2023-07-15 01:03:21
  * :Description  :同步 IP 到 Domain Pool 中
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -30,14 +30,153 @@ func SyncSettings() {
 	}
 }
 
-// func inDomainPool(slice []IPInDomain, ip string) bool {
-// 	for _, v := range slice {
-// 		if v.IP == ip {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
+func cleanPrimaryProxyPool(max_life_time int64) {
+
+	// 定义变量接收需要删除的 ip，与计数
+	count_delete := 0
+	to_delete := make([]string, 0)
+
+	// 遍历一级代理池
+	pool.MemoryPool.Range(func(key, value any) bool {
+
+		// 转义变量
+		ip := key.(string)
+		acquire_time := value.(time.Time)
+
+		// 判断是否过期
+		if time.Since(acquire_time).Seconds() > float64(max_life_time) {
+			to_delete = append(to_delete, ip)
+		}
+		return true
+	})
+	for _, ip := range to_delete {
+		pool.MemoryPool.Delete(ip)
+		count_delete++
+	}
+	log.Log.Debug("删除过期 IP: ", count_delete, " 个")
+}
+
+func cleanNotUsedSecondaryProxyPool(max_hour int) {
+
+	// 定义变量接收需要删除的 ip
+	to_delete := make([]string, 0)
+	count_delete := 0
+
+	// 遍历二级代理
+	pool.MemorySecondaryPool.Range(func(secondary_pool_name, secondary_pool any) bool {
+
+		// 二级代理池
+		pt_secondary_pool := secondary_pool.(*sync.Map)
+
+		// 获取二级代理上次的使用时间
+		last_use, ok := pt_secondary_pool.Load("last_use")
+		if !ok {
+			log.Log.Debug("获取二级代理上次使用时间失败")
+			return true
+		}
+
+		// 判断是否过期
+		if time.Since(last_use.(time.Time)).Seconds() > float64(max_hour*60*60) {
+			to_delete = append(to_delete, secondary_pool_name.(string))
+		}
+		return true
+	})
+
+	// 遍历需要删除的二级代理名
+	for _, secondary_pool_name := range to_delete {
+		pool.MemorySecondaryPool.Delete(secondary_pool_name)
+		count_delete++
+	}
+	log.Log.Debug("删除过期域名: ", count_delete, " 个")
+}
+
+func addNewIPToSecondaryProxyPool() {
+
+	// 遍历一级代理 ip 池
+	pool.MemoryPool.Range(func(key, value any) bool {
+
+		// 获取 ip 和初始时间
+		ip := key.(string)
+		acquire_time := value.(time.Time)
+
+		// 遍历每个二级代理
+		pool.MemorySecondaryPool.Range(func(secondary_pool_name, secondary_pool any) bool {
+
+			// 二级代理池
+			pt_secondary_pool := secondary_pool.(*sync.Map)
+
+			// 获取二级代理池的全部 ip
+			ip_pool, ok := pt_secondary_pool.Load("ip_pool")
+			// 如果获取时发生错误，处理下一个
+			if !ok {
+				log.Log.Error("向二级代理添加ip时, 获取二级代理池失败")
+				return true
+			}
+
+			// 使用一级代理的 ip 来判断是否在二级代理池中
+			pt_ip_pool := ip_pool.(*sync.Map)
+			_, ok = pt_ip_pool.Load(ip)
+			// ip 已经存在
+			if ok {
+				log.Log.Debug("IP 已经存在")
+				return true
+			}
+
+			// 添加这个 ip
+			info := map[string]interface{}{
+				"acquire_time": acquire_time,
+				"last_use":     time.Now(),
+			}
+			pt_ip_pool.Store(ip, info)
+
+			// 继续处理下一个二级代理的 ip
+			return true
+		})
+
+		// 进入下一个一级代理的 ip
+		return true
+	})
+}
+
+func cleanSecondaryProxyPool(max_life_time int64) {
+
+	// 遍历二级代理池
+	pool.MemorySecondaryPool.Range(func(secondary_pool_name, secondary_pool any) bool {
+
+		// 二级代理池
+		pt_secondary_pool := secondary_pool.(*sync.Map)
+
+		// 获取二级代理池的全部 ip
+		ip_pool, ok := pt_secondary_pool.Load("ip_pool")
+		// 如果获取时发生错误，处理下一个
+		if !ok {
+			log.Log.Error("清理二级代理时, 获取二级代理池失败")
+			return true
+		}
+
+		// 获取二级代理池全部 ip 的指针
+		pt_ip_pool := ip_pool.(*sync.Map)
+
+		// 遍历池中的全部 ip
+		to_delete := make([]string, 0)
+		pt_ip_pool.Range(func(ip, info any) bool {
+			// 获取 ip 的信息
+			ip_info := info.(map[string]interface{})
+			// 判断是否过期
+			if time.Since(ip_info["acquire_time"].(time.Time)).Seconds() > float64(max_life_time) {
+				to_delete = append(to_delete, ip.(string))
+			}
+			return true
+		})
+		// 遍历需要删除 ip, 最后在 pointer 中删除
+		for _, ip := range to_delete {
+			pt_ip_pool.Delete(ip)
+		}
+
+		// 继续处理下一个二级代理的
+		return true
+	})
+}
 
 /* 同步新的 ip 到二级代理池 */
 func SyncIP() {
@@ -49,80 +188,18 @@ func SyncIP() {
 
 		// 获取一些变量
 		max_life_time := Settings.Get("ip.exist_time").(int64)
-		now := time.Now()
 
-		// 删除一级代理中过期的 ip
-		count_delete := 0
-		ready_to_delete := make([]string, 0)
-		pool.MemoryPool.Range(func(key, value any) bool {
-			if time.Since(value.(time.Time)).Seconds() > float64(max_life_time) {
-				ready_to_delete = append(ready_to_delete, key.(string))
-			}
-			return true
-		})
-		for _, ip := range ready_to_delete {
-			pool.MemoryPool.Delete(ip)
-			count_delete++
-		}
-		log.Log.Debug("删除过期 IP: ", count_delete, " 个")
+		// 删除一级代理池过期的 ip
+		cleanPrimaryProxyPool(max_life_time)
 
-		// 删除超过1天没有使用的域名
-		to_delete := make([]string, 0)
-		pool.MemorySecondaryPool.Range(func(domain_name, _ any) bool {
-			domain_map, _ := pool.MemorySecondaryPool.Load(domain_name)
-			last_use, _ := domain_map.(*sync.Map).Load("last_use")
-			if last_use.(time.Time).Second() > int(max_life_time) {
-				to_delete = append(to_delete, domain_name.(string))
-			}
-			return true
-		})
-		for _, domain_name := range to_delete {
-			pool.MemorySecondaryPool.Delete(domain_name)
-			log.Log.Debug("删除过期域名: ", domain_name)
-		}
+		// 删除超过一定时间的二级代理
+		cleanNotUsedSecondaryProxyPool(12)
 
 		// 添加新 ip 到二级代理中
+		addNewIPToSecondaryProxyPool()
 
 		// 删除二级代理中已过期的 ip
+		cleanSecondaryProxyPool(max_life_time)
 	}
 
-	// 	// 删除过期的 ip
-
-	// // 同步 IP 进入 Domain Pool
-	// for name, slice := range DomainPool {
-	// 	tmp_new_ips := make([]IPInDomain, 0)
-	// 	Pool.Range(func(p_ip, p_time interface{}) bool {
-	// 		// 如果 IP 池中的 IP 不在 Domain Pool 中，则添加到临时变量中
-	// 		if !inDomainPool(slice, p_ip.(string)) {
-	// 			tmp_new_ips = append(tmp_new_ips, IPInDomain{p_ip.(string), p_time.(time.Time), time.Now()})
-	// 		}
-	// 		return true
-	// 	})
-	// 	old_ips := DomainPool[name]
-	// 	new_ips := append(old_ips, tmp_new_ips...)
-	// 	DomainPool[name] = new_ips
-	// }
-
-	// // 删除 Domain Pool 中过期的 IP
-	// for name, slice := range DomainPool {
-	// 	// 获取需要删除的 IP
-	// 	ready_to_delete := make([]IPInDomain, 0)
-	// 	for _, ip := range slice {
-	// 		if time.Since(ip.AcquireTime).Seconds() > float64(max_life_time) {
-	// 			ready_to_delete = append(ready_to_delete, ip)
-	// 		}
-	// 	}
-	// 	// 遍历需要删除的 ip
-	// 	for _, ip := range ready_to_delete {
-	// 		for i, v := range slice {
-	// 			if v.IP == ip.IP {
-	// 				slice = append(slice[:i], slice[i+1:]...)
-	// 			}
-	// 		}
-	// 	}
-	// 	DomainPool[name] = slice
-	// }
-	// cost := time.Since(now)
-	// log.Debug("完成同步, 同步耗时: ", cost)
-	// Locker.Unlock()
 }

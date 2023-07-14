@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-07-13 16:46:06
  * :LastEditors  :loyd
- * :LastEditTime :2023-07-14 17:58:18
+ * :LastEditTime :2023-07-15 01:32:38
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -24,7 +24,7 @@ var MemoryPool sync.Map
 //			domain string
 //			last_use time.Time
 //			ip_pool sync.Map{
-//				ip sync.Map{
+//				ip : {
 //					acquire_time time.Time
 //					last_use time.Time
 //				}
