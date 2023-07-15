@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-07-16 01:48:09
+ * :LastEditTime :2023-07-16 02:08:38
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -24,7 +24,7 @@ var (
 	total_hour  int = 0
 	total_today int = 0
 	date            = time.Now().Day()
-	hour 			= time.Now().Hour()
+	hour            = time.Now().Hour()
 )
 
 /* 获取 IP  */
@@ -62,15 +62,17 @@ func RequestIP() {
 		// 计数
 		total += 1
 		if time.Now().Day() != date {
+			date = time.Now().Day()
 			total_today = 0
 		}
 		total_today += 1
 		if time.Now().Hour() != hour {
+			hour = time.Now().Hour()
 			total_hour = 0
 		}
 		total_hour += 1
 		log.Log.Debugf("获取到 IP: %s, 本小时内累积获取: %d, 今日累积获取: %d, 累积数量: %d", ip, total_hour, total_today, total)
-		
+
 		// 添加 IP 到 IP 池
 		now := time.Now()
 		pool.MemoryPool.Store(ip, now)
