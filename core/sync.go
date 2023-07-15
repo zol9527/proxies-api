@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 16:38:33
  * :LastEditors  :loyd
- * :LastEditTime :2023-07-15 01:03:21
+ * :LastEditTime :2023-07-15 16:19:37
  * :Description  :同步 IP 到 Domain Pool 中
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -118,7 +118,6 @@ func addNewIPToSecondaryProxyPool() {
 			_, ok = pt_ip_pool.Load(ip)
 			// ip 已经存在
 			if ok {
-				log.Log.Debug("IP 已经存在")
 				return true
 			}
 
