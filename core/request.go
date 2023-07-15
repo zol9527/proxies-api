@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :loyd
- * :LastEditTime :2023-07-13 17:08:16
+ * :LastEditTime :2023-07-16 01:48:09
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -20,13 +20,15 @@ import (
 )
 
 var (
-	total int = 0
+	total       int = 0
+	total_hour  int = 0
+	total_today int = 0
+	date            = time.Now().Day()
+	hour 			= time.Now().Hour()
 )
 
 /* 获取 IP  */
 func RequestIP() {
-
-loop_request_ip:
 
 	for {
 		// 获取 IP 池中 IP 数量
@@ -44,7 +46,7 @@ loop_request_ip:
 		if err != nil {
 			log.Log.Error("请求代理网址失败: ", err)
 			time.Sleep(2 * time.Second)
-			continue loop_request_ip
+			continue
 		}
 
 		// 解析返回的数据
@@ -54,12 +56,21 @@ loop_request_ip:
 		// 验证 IP 是否合法
 		if !isIPv4(ip) {
 			time.Sleep(2 * time.Second)
-			continue loop_request_ip
+			continue
 		}
 
+		// 计数
 		total += 1
-		log.Log.Debugf("获取到 IP: %s, 累积数量: %d", ip, total)
-
+		if time.Now().Day() != date {
+			total_today = 0
+		}
+		total_today += 1
+		if time.Now().Hour() != hour {
+			total_hour = 0
+		}
+		total_hour += 1
+		log.Log.Debugf("获取到 IP: %s, 本小时内累积获取: %d, 今日累积获取: %d, 累积数量: %d", ip, total_hour, total_today, total)
+		
 		// 添加 IP 到 IP 池
 		now := time.Now()
 		pool.MemoryPool.Store(ip, now)
