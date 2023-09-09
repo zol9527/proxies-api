@@ -1,8 +1,9 @@
 ## 内存结构
 
-``` json
+```
 {
     "www.xxx-01.com": {
+        "lock"": 0,
         "domain": "www.xxx-01.com",
         "lastuse": "2023-07-13 16:46:06",
         "pool": [
@@ -23,7 +24,7 @@
     },
 
     "www.xxx-02.com": {
-
+        ...
     },
     ...
 }

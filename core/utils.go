@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-06-02 17:05:47
  * :LastEditors  :loyd
- * :LastEditTime :2023-07-13 17:05:45
+ * :LastEditTime :2023-09-10 02:14:04
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -11,20 +11,9 @@
 package core
 
 import (
-	"ip-controller/pool"
 	"net"
 	"strings"
 )
-
-/* 计算 IP 池大小 */
-func getPoolSize() int64 {
-	pool_size := 0
-	pool.MemoryPool.Range(func(key, value interface{}) bool {
-		pool_size++
-		return true
-	})
-	return int64(pool_size)
-}
 
 /* 判断是否是 ip */
 func isIPv4(ip string) bool {

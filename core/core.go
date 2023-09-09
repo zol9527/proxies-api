@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-07-15 01:59:16
+ * :LastEditTime :2023-09-10 02:46:17
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -12,11 +12,10 @@ package core
 
 import (
 	"fmt"
+	"ip-controller/core/create"
 	"ip-controller/pool"
-	"math/rand"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,65 +39,44 @@ func core(c *gin.Context) {
 		return
 	}
 
-	// 查看是否存在这个二级代理
-	_, ok := pool.MemorySecondaryPool.Load(domain_query)
-	// 不存在则添加
+	// 查看 MemoryPool 中是否存在这个域名, 不存在则添加
+	_, ok := pool.MemoryPool.Load(domain_query)
 	if !ok {
-		var tmp_secondary_pool sync.Map
-		tmp_secondary_pool.Store("domain", domain_query)
-		tmp_secondary_pool.Store("last_use", time.Now())
-		tmp_secondary_pool.Store("ip_pool", &sync.Map{})
-		pool.MemorySecondaryPool.Store(domain_query, &tmp_secondary_pool)
-	}
-
-	// 检查二级池中是否存在 ip
-	secondary_pool, _ := pool.MemorySecondaryPool.Load(domain_query)
-	pt_secondary_pool := secondary_pool.(*sync.Map)
-
-	// 获取池
-	ip_pool, _ := pt_secondary_pool.Load("ip_pool")
-	pt_ip_pool := ip_pool.(*sync.Map)
-
-	// 检查这个池大小
-	size := 0
-	pt_ip_pool.Range(func(key, value interface{}) bool {
-		size++
-		return true
-	})
-
-	// 如果没有 ip 则拒绝该请求
-	if size == 0 {
+		new_domain := &create.NewDomain{}
+		domain := new_domain.SetDomain(domain_query).SetLastUseTime(time.Now()).SetPool([]*create.IP{}).Create()
+		pool.MemoryPool.Store(domain_query, domain)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
-			"msg":  "当前 IP 池为空",
+			"msg":  "新建域名IP池，稍后会主动向其添加可用IP，请再次请求",
 		})
 		return
 	}
 
-	// 将所有 ip 放入一个切片中
-	var ip_slice []string
-	pt_ip_pool.Range(func(key, value interface{}) bool {
-		ip_slice = append(ip_slice, key.(string))
-		return true
-	})
-
-	// 随机获取一个 ip
-	rand.Seed(time.Now().UnixNano())
-	index := rand.Intn(size)
-	ip := ip_slice[index]
-
-	// 获取这个 ip 的信息
-	ip_info, _ := pt_ip_pool.Load(ip)
+	// 检查 MemoryPool 中的这个域名是否有 IP, 有则获取一个IP，并返回且
+	domain, _ := pool.MemoryPool.Load(domain_query)
+	pt_domain := domain.(*create.Domain)
+	ip, err := pt_domain.GetIP()
+	if err != nil {
+		// 如果没有 IP 则返回错误
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "当前域名IP池为空",
+		})
+		return
+	}
 
 	// 获取上次使用时间与设置中的使用延迟
-	last_use := ip_info.(map[string]interface{})["last_use"].(time.Time)
+	last_use := ip.LastuseTime
 	delay := Settings.Get("pool.delay").(int64)
+
+	// 保证在每个 domain 中只有一个用户在操作
+	pt_domain.Lock.Lock()
+	defer pt_domain.Lock.Unlock()
 
 	// 如果上次使用时间与当前时间的差值大于延迟时间, 则返回这个 ip
 	if time.Since(last_use).Seconds() > float64(delay) {
 		// 更新这个 ip 的使用时间
-		ip_info.(map[string]interface{})["last_use"] = time.Now()
-		pt_ip_pool.Store(ip, ip_info)
+		ip.LastuseTime = time.Now()
 		// 返回 ip
 		c.JSON(http.StatusOK, gin.H{
 			"http":  ip,
