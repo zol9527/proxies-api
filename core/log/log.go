@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-07-13 17:21:23
  * :LastEditors  :loyd
- * :LastEditTime :2023-09-08 17:42:50
+ * :LastEditTime :2023-12-14 19:50:23
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -18,8 +18,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// 初始化设置
+func init() {
+	Log = logrus.New()
+	Log.SetOutput(os.Stdout)
+	Log.SetFormatter(&CustomFormatter{})
+	Log.SetLevel(logrus.DebugLevel)
+	Log.SetReportCaller(true)
+	Debug("日志模块初始化完成")
+}
+
 // 定义变量
 var Log *logrus.Logger
+
 
 // 设置打印格式
 type CustomFormatter struct{}
@@ -37,16 +48,6 @@ func (m *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	b.WriteString(newLog)
 	return b.Bytes(), nil
-}
-
-// 初始化设置
-func init() {
-	Log = logrus.New()
-	Log.SetOutput(os.Stdout)
-	Log.SetFormatter(&CustomFormatter{})
-	Log.SetLevel(logrus.DebugLevel)
-	Log.SetReportCaller(true)
-	Debug("日志模块初始化完成")
 }
 
 func Info(args ...interface{}) {

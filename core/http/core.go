@@ -2,20 +2,20 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-09-10 02:46:17
+ * :LastEditTime :2023-12-21 16:28:26
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
  */
 
-package core
+package http
 
 import (
 	"fmt"
-	"ip-controller/core/create"
-	"ip-controller/pool"
+	"ip-controller/config"
 	"net/http"
 	"strconv"
+	"ip-controller/core/pool"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,11 +40,9 @@ func core(c *gin.Context) {
 	}
 
 	// 查看 MemoryPool 中是否存在这个域名, 不存在则添加
-	_, ok := pool.MemoryPool.Load(domain_query)
+	_, ok := pool.Pool.Pool[domain_query]
 	if !ok {
-		new_domain := &create.NewDomain{}
-		domain := new_domain.SetDomain(domain_query).SetLastUseTime(time.Now()).SetPool([]*create.IP{}).Create()
-		pool.MemoryPool.Store(domain_query, domain)
+		pool.Pool.Create(domain_query)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
 			"msg":  "新建域名IP池，稍后会主动向其添加可用IP，请再次请求",
@@ -53,11 +51,8 @@ func core(c *gin.Context) {
 	}
 
 	// 检查 MemoryPool 中的这个域名是否有 IP, 有则获取一个IP，并返回且
-	domain, _ := pool.MemoryPool.Load(domain_query)
-	pt_domain := domain.(*create.Domain)
-	ip, err := pt_domain.GetIP()
-	if err != nil {
-		// 如果没有 IP 则返回错误
+	ip := pool.Pool.GetIP(domain_query)
+	if ip == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
 			"msg":  "当前域名IP池为空",
@@ -67,7 +62,7 @@ func core(c *gin.Context) {
 
 	// 获取上次使用时间与设置中的使用延迟
 	last_use := ip.LastuseTime
-	delay := Settings.Get("pool.delay").(int64)
+	delay := config.Settings.Get("pool.delay").(int64)
 
 	// 保证在每个 domain 中只有一个用户在操作
 	pt_domain.Lock.Lock()
