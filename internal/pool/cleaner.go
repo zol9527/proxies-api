@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-12-12 11:57:13
  * :LastEditors  :loyd
- * :LastEditTime :2023-12-22 11:35:13
+ * :LastEditTime :2023-12-22 17:46:41
  * :Description  :清理过期 IP
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -12,6 +12,7 @@ package pool
 
 import (
 	"ip-controller/config"
+	"ip-controller/internal/log"
 	"time"
 )
 
@@ -43,7 +44,7 @@ func Cleaner() {
 				if ip_meta.Initial_time.Add(time.Duration(config.Settings.Get("ip.exist_time").(int64)) * time.Second).Before(time.Now()) {
 
 					// 删除 IP
-					DeleteIP(domain_name, ip)
+					DeleteIPFromDomain(domain_name, ip)
 					if !has_handled {
 						handled_count++
 					}
@@ -59,6 +60,8 @@ func Cleaner() {
 			current_ip_number = current_ip_number.(int) - handled_count
 			sm.Store("current_ip_number", current_ip_number)
 		}
+
+		log.Debugf("清理了 %d 个 IP", handled_count)
 
 		// 重置
 		handled_count = 0

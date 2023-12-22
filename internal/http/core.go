@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :loyd
- * :LastEditTime :2023-12-22 11:46:38
+ * :LastEditTime :2023-12-22 15:29:21
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -83,15 +83,18 @@ func core(c *gin.Context) {
 
 func Server() {
 
-	// 获取 port
-	port_str := config.Settings.Get("server.port").(int64)
-	port := strconv.FormatInt(port_str, 10)
+	go func() {
+		// 获取 port
+		port_str := config.Settings.Get("server.port").(int64)
+		port := strconv.FormatInt(port_str, 10)
 
-	r := gin.New()
+		r := gin.New()
 
-	// 路由
-	r.GET("/get", core)
+		// 路由
+		r.GET("/get", core)
 
-	// 启动
-	r.Run(fmt.Sprintf(":%s", port))
+		// 启动
+		r.Run(fmt.Sprintf(":%s", port))
+
+	}()
 }

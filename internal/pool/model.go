@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-12-18 16:17:02
  * :LastEditors  :loyd
- * :LastEditTime :2023-12-22 12:00:53
+ * :LastEditTime :2023-12-22 17:36:15
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -19,13 +19,15 @@ import (
 )
 
 var pool *Pool = &Pool{
-	Pool: make(map[string]*Domain),
+	TemporaryPool: make([]string, 0),
+	Pool:          make(map[string]*Domain),
 }
 
 // 池
 type Pool struct {
-	Lock sync.Mutex
-	Pool map[string]*Domain
+	Lock          sync.Mutex
+	TemporaryPool []string
+	Pool          map[string]*Domain
 }
 
 // 域基础信息
@@ -51,6 +53,7 @@ func GetPool() *Pool {
 	return pool
 }
 
+// 检测域存在
 func DomainExist(domain string) bool {
 	if _, ok := pool.Pool[domain]; ok {
 		return true
@@ -64,7 +67,7 @@ func CreateDomain(domain string) bool {
 
 	// 加锁
 	pool.Lock.Lock()
-	pool.Lock.Unlock()
+	defer pool.Lock.Unlock()
 
 	// 查看 pool 中是否存在这个域
 	if _, ok := pool.Pool[domain]; !ok {
@@ -76,13 +79,19 @@ func CreateDomain(domain string) bool {
 			Memory_pool:    make(map[string]*IP),
 		}
 
-		// 创建
+		// 赋值 domain
 		pool.Pool[domain] = &Domain{
 			Meta: new_meta,
 		}
 
+		// 向 domain 添加 ip
+		for _, ip := range pool.TemporaryPool {
+			AddIPToDomain(domain, ip)
+		}
+
 		return true
 	} else {
+
 		// 返回 nil 代表已存在
 		return false
 	}
@@ -103,12 +112,15 @@ func DeleteDomain(domain string) bool {
 	}
 }
 
-// 添加 IP 到 *全部* 域
+// 添加 ip 到某个域, 更新 TemporaryPool
 func AddIP(ip string) bool {
 
 	// 加锁
 	pool.Lock.Lock()
 	defer pool.Lock.Unlock()
+
+	// 添加进入 TemporaryPool
+	pool.TemporaryPool = append(pool.TemporaryPool, ip)
 
 	// 遍历全部 domain, 添加 ip
 	for _, domain := range pool.Pool {
@@ -129,8 +141,65 @@ func AddIP(ip string) bool {
 	return true
 }
 
-// 删除 IP
-func DeleteIP(domain string, ip string) bool {
+// 独立添加到某个域
+func AddIPToDomain(domain string, ip string) bool {
+
+	// 判断域名存在
+	if _, ok := pool.Pool[domain]; ok {
+
+		// 加锁
+		pool.Pool[domain].Lock.Lock()
+
+		// 添加进入 memory_pool
+		now := time.Now()
+		pool.Pool[domain].Meta.Memory_pool[ip] = &IP{
+			Initial_time:   now,
+			Last_used_time: now,
+		}
+
+		pool.Pool[domain].Lock.Unlock()
+		return true
+	}
+
+	log.Debugln("Add IP - Domain not exists")
+	return false
+}
+
+// 删除全部域的 ip
+func DeleteIP(ip string) bool {
+	
+	// 加锁
+	pool.Lock.Lock()
+	defer pool.Lock.Unlock()
+
+	// 删除 TemporaryPool 中的 ip
+	for index, value := range pool.TemporaryPool {
+		if value == ip {
+			pool.TemporaryPool = append(pool.TemporaryPool[:index], pool.TemporaryPool[index+1:]...)
+		}
+	}
+
+	// 遍历全部 domain, 删除 ip
+	for _, domain := range pool.Pool {
+
+		// domain 操作加锁
+		domain.Lock.Lock()
+
+		// 删除 ip
+		if _, ok := domain.Meta.Memory_pool[ip]; ok {
+			delete(domain.Meta.Memory_pool, ip)
+		} else {
+			log.Debugln("Delete IP - IP not exists in the domain")
+		}
+
+		domain.Lock.Unlock()
+	}
+
+	return true
+}
+
+// 删除某个域的 ip
+func DeleteIPFromDomain(domain string, ip string) bool {
 
 	// 判断域名存在
 	if _, ok := pool.Pool[domain]; ok {
