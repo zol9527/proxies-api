@@ -1,6 +1,6 @@
 /*
  * :Date         :2024-05-06 16:15:09
- * :LastEditTime :2024-05-07 20:35:38
+ * :LastEditTime :2024-05-07 20:48:20
  * :Description  :
  *
  */
@@ -68,7 +68,7 @@ func CreateDomain(domain string) bool {
 
 	if _, ok := Pool.Pool[domain]; !ok {
 		Pool.Pool[domain] = &Domain{
-			IP:          BasePool,
+			IP: BasePool,
 		}
 		return true
 	}
@@ -110,6 +110,7 @@ func AddIP(ip string) bool {
 	if _, ok := BasePool[ip]; !ok {
 		BasePool[ip] = &IP{
 			InitialTime: time.Now(),
+			DomainUsage: make(map[string]time.Time),
 		}
 		return true
 	}
