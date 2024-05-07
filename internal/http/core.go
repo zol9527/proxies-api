@@ -1,8 +1,8 @@
 /*
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
- * :LastEditors  :loyd
- * :LastEditTime :2023-12-22 15:29:21
+ * :LastEditors  :Please set LastEditors
+ * :LastEditTime :2024-05-07 20:34:05
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -16,7 +16,6 @@ import (
 	"ip-controller/internal/pool"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,30 +54,17 @@ func core(c *gin.Context) {
 	if ip == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
-			"msg":  "当前域名IP池为空",
+			"msg":  "当前域名IP池为空, 或者 ip 没有到可用时间, 可再次请求",
 		})
 		return
 	}
 
-	// 确定使用延迟
-	delay := config.Settings.Get("pool.delay").(int64)
-	pool := pool.GetPool()
-	if time.Since(pool.Pool[domain_query].Meta.Last_used_time).Seconds() > float64(delay) {
-
-		// 返回
-		c.JSON(http.StatusOK, gin.H{
-			"http":  ip,
-			"https": ip,
-		})
-		return
-
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  "当前 IP 未到可用时间",
-		})
-		return
-	}
+	// 返回 IP
+	c.JSON(http.StatusOK, gin.H{
+		"http":  ip,
+		"https": ip,
+	})
+	return
 }
 
 func Server() {

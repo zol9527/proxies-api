@@ -2,7 +2,7 @@
 port = 8000
 
 [pool]
-size = 4
+size = 1
 delay = 5
 
 [proxy]
