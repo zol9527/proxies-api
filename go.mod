@@ -8,6 +8,8 @@ require (
 	github.com/wangluozhe/requests v1.1.14
 )
 
+require golang.org/x/time v0.5.0 // indirect
+
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect

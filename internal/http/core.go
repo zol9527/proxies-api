@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 15:57:08
  * :LastEditors  :Please set LastEditors
- * :LastEditTime :2024-05-07 20:34:05
+ * :LastEditTime :2024-05-14 15:00:40
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"ip-controller/config"
 	"ip-controller/internal/pool"
+	"ip-controller/middleware"
 	"net/http"
 	"strconv"
 
@@ -64,7 +65,6 @@ func core(c *gin.Context) {
 		"http":  ip,
 		"https": ip,
 	})
-	return
 }
 
 func Server() {
@@ -77,7 +77,7 @@ func Server() {
 		r := gin.New()
 
 		// 路由
-		r.GET("/get", core)
+		r.GET("/get", middleware.RateLimitMiddleware(), core)
 
 		// 启动
 		r.Run(fmt.Sprintf(":%s", port))
