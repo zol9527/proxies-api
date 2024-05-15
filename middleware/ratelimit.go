@@ -1,6 +1,6 @@
 /*
  * :Date         :2024-05-14 14:51:22
- * :LastEditTime :2024-05-14 15:31:45
+ * :LastEditTime :2024-05-15 16:23:32
  * :Description  :
  *
  */
@@ -26,7 +26,7 @@ type IPRateLimiter struct {
 var RateLimiter = &IPRateLimiter{
 	ips:   make(map[string]*rate.Limiter),
 	mu:    &sync.Mutex{},
-	limit: rate.Limit(10), // 每秒5个请求
+	limit: rate.Limit(10), // 每秒10个请求
 	burst: 20,             // 桶的大小
 }
 
@@ -59,6 +59,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"code": 424,
 				"msg":  "访问太频繁，请稍后再试",
+				"ip":   ip,
 			})
 			c.Abort()
 			return

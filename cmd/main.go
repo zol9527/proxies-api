@@ -1,8 +1,8 @@
 /*
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:29:39
- * :LastEditors  :loyd
- * :LastEditTime :2023-12-22 15:38:22
+ * :LastEditors  :Please set LastEditors
+ * :LastEditTime :2024-05-15 17:16:59
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -12,7 +12,7 @@ package main
 
 import (
 	"fmt"
-	"ip-controller/config"
+	_ "ip-controller/config"
 	"ip-controller/internal/http"
 	"ip-controller/internal/pool"
 	"os"
@@ -29,7 +29,6 @@ func main() {
 	}()
 
 	// 依次启动
-	go config.Start()
 	go pool.PoolInit()
 	go http.Server()
 

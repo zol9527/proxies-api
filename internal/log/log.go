@@ -1,8 +1,8 @@
 /*
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-07-13 17:21:23
- * :LastEditors  :loyd
- * :LastEditTime :2023-12-14 19:50:23
+ * :LastEditors  :Please set LastEditors
+ * :LastEditTime :2024-05-15 16:30:20
  * :Description  :
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -30,7 +30,6 @@ func init() {
 
 // 定义变量
 var Log *logrus.Logger
-
 
 // 设置打印格式
 type CustomFormatter struct{}
