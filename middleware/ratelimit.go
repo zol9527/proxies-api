@@ -1,6 +1,6 @@
 /*
  * :Date         :2024-05-14 14:51:22
- * :LastEditTime :2024-05-20 13:45:25
+ * :LastEditTime :2024-05-24 16:47:42
  * :Description  :
  *
  */
@@ -17,35 +17,33 @@ import (
 
 // IPRateLimiter 结构体
 type IPRateLimiter struct {
-	ips   map[string]*rate.Limiter
-	mu    *sync.Mutex
+	hosts map[string]*rate.Limiter
+	mu    *sync.RWMutex
 	limit rate.Limit // 每秒可以生成的令牌数
 	burst int        // 令牌桶的容量
 }
 
 var RateLimiter = &IPRateLimiter{
-	ips:   make(map[string]*rate.Limiter),
-	mu:    &sync.Mutex{},
+	hosts: make(map[string]*rate.Limiter),
+	mu:    &sync.RWMutex{},
 	limit: rate.Limit(10), // 每秒10个请求
 	burst: 20,             // 桶的大小
 }
 
-// 添加IP到限流器
-func (r *IPRateLimiter) AddIP(ip string) *rate.Limiter {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	limiter := rate.NewLimiter(r.limit, r.burst)
-	r.ips[ip] = limiter
-	return limiter
-}
-
 // 获取IP的限流器
-func (r *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
-	r.mu.Lock()
-	limiter, exists := r.ips[ip]
-	r.mu.Unlock()
+func (r *IPRateLimiter) GetLimiter(host string) *rate.Limiter {
+	r.mu.RLock()
+	limiter, exists := r.hosts[host]
+	r.mu.RUnlock()
 	if !exists {
-		return r.AddIP(ip)
+		r.mu.Lock()
+		// 双重检查，防止并发问题
+		limiter, exists = r.hosts[host]
+		if !exists {
+			limiter = rate.NewLimiter(r.limit, r.burst)
+			r.hosts[host] = limiter
+		}
+		r.mu.Unlock()
 	}
 	return limiter
 }
@@ -53,13 +51,21 @@ func (r *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 // Gin中间件
 func RateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ip := c.RemoteIP()
-		limiter := RateLimiter.GetLimiter(ip)
+		host := c.Request.URL.Query().Get("domain")
+		if host == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 400,
+				"msg":  "缺少参数",
+			})
+			c.Abort()
+			return
+		}
+		limiter := RateLimiter.GetLimiter(host)
 		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"code": 424,
 				"msg":  "访问太频繁，请稍后再试",
-				"ip":   ip,
+				"host": host,
 			})
 			c.Abort()
 			return

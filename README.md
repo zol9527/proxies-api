@@ -38,3 +38,9 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o <导出文件名> cmd/main.go
 ## :warning: 注意
 
 请下载最新版本
+
+## :robot: 并发测试
+
+稳定无报错
+
+![alt text](<test/截屏2024-05-24 16.57.29.png>)
