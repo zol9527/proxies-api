@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-05-24 14:48:07
  * :LastEditors  :Please set LastEditors
- * :LastEditTime :2024-05-15 21:49:38
+ * :LastEditTime :2024-05-24 11:21:23
  * :Description  :请求代理ip 并添加到管道
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -38,7 +38,7 @@ func AcquireIP() {
 		proxyUrl := config.Settings.Get("proxy.url").(string)
 
 		// 判断 ip 池是否已经满了
-		if len(BasePool) > int(maxPoolSize) {
+		if len(BaseIPList) >= int(maxPoolSize) {
 			log.Debug("IP 池已满, 休眠 2 秒后继续")
 			time.Sleep(2 * time.Second)
 			continue
@@ -92,9 +92,9 @@ func AcquireIP() {
 			total_hour = 0
 		}
 		total_hour += 1
-		log.Debugf("获取到 IP: %s \n 本小时内累积获取: %d \n 今日累积获取: %d \n 累积数量: %d, 代理池中数量: %d", ip, total_hour, total_today, total, len(BasePool))
+		log.Debugf("获取到 IP: %s \n 本小时内累积获取: %d \n 今日累积获取: %d \n 累积数量: %d, 代理池中数量: %d", ip, total_hour, total_today, total, len(BaseIPList))
 
 		// 添加 ip 进入全部域名中
-		Pool.Add(ip)
+		Pool.Add("", ip)
 	}
 }

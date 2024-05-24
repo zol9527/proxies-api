@@ -2,7 +2,7 @@
  * :Author       :loyd zeng.yd@outlook.com
  * :Date         :2023-12-12 11:57:13
  * :LastEditors  :Please set LastEditors
- * :LastEditTime :2024-05-15 22:10:25
+ * :LastEditTime :2024-05-24 11:17:16
  * :Description  :清理过期 IP
  *
  * Copyright (c) 2023 by loyd, All Rights Reserved.
@@ -18,7 +18,7 @@ import (
 
 func Cleaner() {
 
-	timer := time.NewTicker(5 * time.Second)
+	timer := time.NewTicker(10 * time.Second)
 
 	// 计数
 	handled_count := 0
@@ -31,10 +31,15 @@ func Cleaner() {
 
 		// 清理不用的域名: 上次使用时间过大
 		needClearDomains := make([]string, 0)
-		for domain_name, domain := range Pool.Domain {
+		for domain_name, domain := range Pool.DomainMap {
 			domain.Lock.RLock()
+			// 排出 last use time 没有被设置的情况
+			if domain.LastUsedTime.IsZero() {
+				domain.Lock.RUnlock()
+				continue
+			}
 			// 上次使用时间到现在为止以及大于了 12 小时
-			if domain.LastUsedTime.Add(12 * time.Hour).Before(time.Now()) {
+			if domain.LastUsedTime.Add(24 * time.Hour).Before(time.Now()) {
 				// 需要删除的域名
 				needClearDomains = append(needClearDomains, domain_name)
 			}
@@ -48,14 +53,16 @@ func Cleaner() {
 
 		// 清理过期的 ip
 		needClearIPs := make([]string, 0)
-		for _, ip_meta := range BasePool {
+		PLock.RLock()
+		for _, ip := range BaseIPList {
 			// 最开始获取的时间到现在已经大于了配置
-			if ip_meta.InitialTime.Add(time.Duration(existTime) * time.Second).Before(time.Now()) {
+			if ip.InitialTime.Add(time.Duration(existTime) * time.Second).Before(time.Now()) {
 				// 删除 IP
-				needClearIPs = append(needClearIPs, ip_meta.Address)
+				needClearIPs = append(needClearIPs, ip.Address)
 				handled_count++
 			}
 		}
+		PLock.RUnlock()
 
 		// 删除 IP
 		for _, ip := range needClearIPs {

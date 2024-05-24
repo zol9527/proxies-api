@@ -2,11 +2,11 @@
 port = 8000
 
 [pool]
-size = 10
-delay = 600
+size = 1
+delay = 5
 
 [proxy]
 url = "http://127.0.0.1:8001/ip"
 
 [ip]
-exist_time = 600
+exist_time = 10
