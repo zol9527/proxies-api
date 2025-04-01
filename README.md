@@ -18,7 +18,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/proxies-api.git
+git clone https://github.com/zol9527/proxies-api.git
 cd proxies-api
 
 # 安装依赖
