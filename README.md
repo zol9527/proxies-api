@@ -84,9 +84,39 @@ go build -o proxy-pool
 }
 ```
 
+### 获取系统状态
+
+**请求**:
+- 路径: `/status`
+- 方法: `GET`
+- 参数: 无
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "✅ 获取状态成功",
+  "status": {
+    "domains_count": 3,
+    "origins_count": 50,
+    "domains": [
+      {
+        "name": "example.com",
+        "ips_count": 50
+      },
+      {
+        "name": "test.com",
+        "ips_count": 50
+      }
+    ]
+  }
+}
+```
+
 ### 限流机制
 
 系统内置请求限流机制，防止单个域名请求过多，默认限制为每秒10个请求，突发上限为20个请求。
+注意：限流机制仅应用于 `/proxy` 端点，`/status` 端点不受限流影响。
 
 ## :robot: 配置
 
@@ -131,6 +161,7 @@ delay = [0, 5]  # 默认延迟范围(秒)
 ```
 proxies-api/
 ├── cmd/            # 命令行入口
+│   └── main.go     # 主程序入口
 ├── config/         # 配置文件
 ├── internal/       # 内部实现
 │   ├── api/        # HTTP接口
@@ -138,7 +169,6 @@ proxies-api/
 │   ├── log/        # 日志工具
 │   ├── models/     # 数据结构
 │   └── pool/       # IP池管理
-├── main.go         # 主程序入口
 └── README.md       # 文档
 ```
 
