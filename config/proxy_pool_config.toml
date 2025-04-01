@@ -1,0 +1,24 @@
+[server]
+port = 8000
+
+# 代理池配置
+[pool]
+size = 100
+
+# 自定义代理源
+[proxy_source]
+urls = [
+    "http://example.com/proxy1"
+]
+request_frequency = 10
+local_path = [
+    "/var/proxy_pool/proxy.txt",
+    "/var/proxy_pool/proxy2.txt",
+    "/var/proxy_pool/proxy3.txt",
+]
+read_frequency = 10
+
+# 单独对每个 ip 设置, delay 也可以使用 URL 参数动态设置
+[ip]
+lifetime_seconds = 900
+delay = [0, 5]
