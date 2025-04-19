@@ -39,6 +39,30 @@ type IPFetchService struct {
 var ip_fetch_service *IPFetchService
 var service_once sync.Once
 
+// 重试相关常量
+const (
+	DEFAULT_MAX_RETRIES    = 3
+	DEFAULT_RETRY_INTERVAL = 1 * time.Second
+	DEFAULT_MAX_INTERVAL   = 30 * time.Second
+	DEFAULT_TIMEOUT        = 30 * time.Second
+)
+
+// RetryConfig 重试配置结构体
+type RetryConfig struct {
+	MaxRetries    int           // 最大重试次数
+	RetryInterval time.Duration // 重试间隔
+	MaxInterval   time.Duration // 最大重试间隔
+	Timeout       time.Duration // 请求超时时间
+}
+
+// 默认重试配置
+var defaultRetryConfig = RetryConfig{
+	MaxRetries:    DEFAULT_MAX_RETRIES,
+	RetryInterval: DEFAULT_RETRY_INTERVAL,
+	MaxInterval:   DEFAULT_MAX_INTERVAL,
+	Timeout:       DEFAULT_TIMEOUT,
+}
+
 // 默认时间间隔（秒）
 const DEFAULT_READ_INTERVAL = 60
 const DEFAULT_REQUEST_INTERVAL = 300
@@ -318,7 +342,7 @@ func ContainsIgnoreCase(source string, substr string) bool {
 /**
  * Function: searchFromURLs
  *
- * Purpose: 从URL中获取并解析IP地址，支持网页内容解析
+ * Purpose: 从URL中获取并解析IP地址，支持网页内容解析和错误重试
  *
  * Parameters:
  *   - urls ([]string): URL列表
@@ -335,7 +359,7 @@ func searchFromURLs(urls []string) {
 
 	// 创建自定义HTTP客户端，添加超时设置
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: defaultRetryConfig.Timeout,
 	}
 
 	for _, url := range urls {
@@ -351,19 +375,45 @@ func searchFromURLs(urls []string) {
 		// 添加用户代理头部，降低被拒绝的可能性
 		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-		// 发送HTTP请求
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("❌ 请求URL失败:", err)
-			continue
-		}
-		defer resp.Body.Close()
+		// 使用重试机制发送请求
+		var resp *http.Response
+		var retryErr error
+		for retry := 0; retry <= defaultRetryConfig.MaxRetries; retry++ {
+			if retry > 0 {
+				// 计算退避时间
+				backoff := defaultRetryConfig.RetryInterval * time.Duration(1<<uint(retry-1))
+				if backoff > defaultRetryConfig.MaxInterval {
+					backoff = defaultRetryConfig.MaxInterval
+				}
+				fmt.Printf("🔄 第 %d 次重试，等待 %v 后重试...\n", retry, backoff)
+				time.Sleep(backoff)
+			}
 
-		// 检查HTTP状态码
-		if resp.StatusCode != http.StatusOK {
-			fmt.Printf("❌ 请求返回非200状态码: %d %s\n", resp.StatusCode, resp.Status)
+			// 发送HTTP请求
+			resp, retryErr = client.Do(req)
+			if retryErr == nil && resp.StatusCode == http.StatusOK {
+				break
+			}
+
+			if retryErr != nil {
+				fmt.Printf("❌ 第 %d 次请求失败: %v\n", retry+1, retryErr)
+			} else {
+				fmt.Printf("❌ 第 %d 次请求返回非200状态码: %d %s\n", retry+1, resp.StatusCode, resp.Status)
+				resp.Body.Close()
+			}
+
+			if retry == defaultRetryConfig.MaxRetries {
+				fmt.Printf("❌ 达到最大重试次数 %d，放弃请求\n", defaultRetryConfig.MaxRetries)
+				continue
+			}
+		}
+
+		if retryErr != nil {
+			fmt.Printf("❌ 所有重试都失败，放弃请求: %v\n", retryErr)
 			continue
 		}
+
+		defer resp.Body.Close()
 
 		// 读取响应内容
 		body, err := io.ReadAll(resp.Body)
