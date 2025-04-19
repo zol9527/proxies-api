@@ -177,31 +177,46 @@ func (s *IPFetchService) Start() bool {
 	pool.AccessPool()
 	fmt.Println("🚀 启动IP获取服务...")
 
-	// 立即执行一次搜索
-	searchFromFiles(s.paths)
-	searchFromURLs(s.urls)
-
-	// 创建定时器
+	// 创建新的通道和定时器
+	s.stop_chan = make(chan struct{})
 	s.file_ticker = time.NewTicker(s.read_interval)
 	s.url_ticker = time.NewTicker(s.req_interval)
-	s.stop_chan = make(chan struct{})
 	s.is_running = true
+
+	// 立即执行一次搜索
+	if err := searchFromFiles(s.paths); err != nil {
+		fmt.Printf("❌ 文件搜索失败: %v\n", err)
+	}
+	if err := searchFromURLs(s.urls); err != nil {
+		fmt.Printf("❌ URL搜索失败: %v\n", err)
+	}
 
 	// 启动后台协程执行定时任务
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("❌ IP获取服务发生panic: %v\n", r)
+				s.Stop() // 确保服务被正确停止
+			}
+		}()
+
 		for {
 			select {
 			case <-s.file_ticker.C:
 				fmt.Println("🕒 执行定时文件读取...")
 				needUpdate := NeedUpdateIPRegistry()
 				if needUpdate {
-					searchFromFiles(s.paths)
+					if err := searchFromFiles(s.paths); err != nil {
+						fmt.Printf("❌ 定时文件读取失败: %v\n", err)
+					}
 				}
 			case <-s.url_ticker.C:
 				fmt.Println("🌐 执行定时URL请求...")
 				needUpdate := NeedUpdateIPRegistry()
 				if needUpdate {
-					searchFromURLs(s.urls)
+					if err := searchFromURLs(s.urls); err != nil {
+						fmt.Printf("❌ 定时URL请求失败: %v\n", err)
+					}
 				}
 			case <-s.stop_chan:
 				fmt.Println("🛑 IP获取服务接收到停止信号")
@@ -246,7 +261,14 @@ func (s *IPFetchService) Stop() bool {
 	}
 
 	// 发送停止信号
-	close(s.stop_chan)
+	if s.stop_chan != nil {
+		select {
+		case <-s.stop_chan:
+			// 通道已经关闭
+		default:
+			close(s.stop_chan)
+		}
+	}
 
 	// 更新状态
 	s.is_running = false
@@ -292,13 +314,13 @@ func NeedUpdateIPRegistry() bool {
  * Parameters:
  *   - paths ([]string): 文件路径列表
  *
- * Returns: 无
+ * Returns: error - 如果搜索失败则返回错误，否则返回nil
  */
-func searchFromFiles(paths []string) {
+func searchFromFiles(paths []string) error {
 	// 读取配置文件
 	file_paths := findValidFilePaths(paths)
 	if len(file_paths) == 0 {
-		return
+		return fmt.Errorf("❌ 未找到有效的配置文件")
 	}
 
 	// 如果找到了文件，打印找到的文件路径
@@ -307,17 +329,21 @@ func searchFromFiles(paths []string) {
 	// 从文件中加载
 	ip_regex := `(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::(\d{1,5}))?`
 
+	var lastErr error
 	for _, file_path := range file_paths {
 		// 从文件读取内容
 		file_content, err := os.ReadFile(file_path)
 		if err != nil {
-			fmt.Println("❌ 读取文件失败:", err)
+			lastErr = fmt.Errorf("❌ 读取文件 %s 失败: %w", file_path, err)
+			fmt.Println(lastErr)
 			continue
 		}
 
 		// 解析并处理IP
 		parseAndProcessIPs(string(file_content), ip_regex)
 	}
+
+	return lastErr
 }
 
 /**
@@ -347,12 +373,11 @@ func ContainsIgnoreCase(source string, substr string) bool {
  * Parameters:
  *   - urls ([]string): URL列表
  *
- * Returns: 无
+ * Returns: error - 如果搜索失败则返回错误，否则返回nil
  */
-func searchFromURLs(urls []string) {
+func searchFromURLs(urls []string) error {
 	if len(urls) == 0 {
-		fmt.Println("⚠️ 没有配置URL来源")
-		return
+		return fmt.Errorf("❌ 没有配置URL来源")
 	}
 
 	ip_regex := `(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::(\d{1,5}))?`
@@ -362,13 +387,15 @@ func searchFromURLs(urls []string) {
 		Timeout: defaultRetryConfig.Timeout,
 	}
 
+	var lastErr error
 	for _, url := range urls {
 		fmt.Println("🌐 正在从URL获取IP:", url)
 
 		// 创建请求对象
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			fmt.Println("❌ 创建请求对象失败:", err)
+			lastErr = fmt.Errorf("❌ 创建请求对象失败: %w", err)
+			fmt.Println(lastErr)
 			continue
 		}
 
@@ -403,13 +430,15 @@ func searchFromURLs(urls []string) {
 			}
 
 			if retry == defaultRetryConfig.MaxRetries {
-				fmt.Printf("❌ 达到最大重试次数 %d，放弃请求\n", defaultRetryConfig.MaxRetries)
+				lastErr = fmt.Errorf("❌ 达到最大重试次数 %d，放弃请求", defaultRetryConfig.MaxRetries)
+				fmt.Println(lastErr)
 				continue
 			}
 		}
 
 		if retryErr != nil {
-			fmt.Printf("❌ 所有重试都失败，放弃请求: %v\n", retryErr)
+			lastErr = fmt.Errorf("❌ 所有重试都失败，放弃请求: %w", retryErr)
+			fmt.Println(lastErr)
 			continue
 		}
 
@@ -418,7 +447,8 @@ func searchFromURLs(urls []string) {
 		// 读取响应内容
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("❌ 读取响应失败:", err)
+			lastErr = fmt.Errorf("❌ 读取响应失败: %w", err)
+			fmt.Println(lastErr)
 			continue
 		}
 
@@ -435,6 +465,8 @@ func searchFromURLs(urls []string) {
 			parseAndProcessIPs(string(body), ip_regex)
 		}
 	}
+
+	return lastErr
 }
 
 /**

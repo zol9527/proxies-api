@@ -81,6 +81,11 @@ func LoadConfig(config_path string) (*Config, error) {
 		return nil, fmt.Errorf("❌ 解析TOML配置失败: %w", err)
 	}
 
+	// 验证配置
+	if err := ValidateConfig(config); err != nil {
+		return nil, fmt.Errorf("❌ 配置验证失败: %w", err)
+	}
+
 	// 设置全局配置
 	APP_CONFIG = config
 
@@ -99,4 +104,41 @@ func LoadConfig(config_path string) (*Config, error) {
  */
 func GetConfig() *Config {
 	return APP_CONFIG
+}
+
+// ValidateConfig 验证配置的完整性
+func ValidateConfig(config *Config) error {
+	if config == nil {
+		return fmt.Errorf("❌ 配置对象为空")
+	}
+
+	// 验证服务器配置
+	if config.Server.Port <= 0 {
+		return fmt.Errorf("❌ 服务器端口配置无效: %d", config.Server.Port)
+	}
+
+	// 验证代理池配置
+	if config.Pool.Size <= 0 {
+		return fmt.Errorf("❌ 代理池大小配置无效: %d", config.Pool.Size)
+	}
+
+	// 验证代理源配置
+	if len(config.ProxySource.Url) == 0 && len(config.ProxySource.LocalPath) == 0 {
+		return fmt.Errorf("❌ 未配置任何代理源（URL或本地路径）")
+	}
+
+	if config.ProxySource.RequestFrequency <= 0 {
+		return fmt.Errorf("❌ 请求频率配置无效: %d", config.ProxySource.RequestFrequency)
+	}
+
+	if config.ProxySource.ReadFrequency <= 0 {
+		return fmt.Errorf("❌ 读取频率配置无效: %d", config.ProxySource.ReadFrequency)
+	}
+
+	// 验证IP配置
+	if config.Ip.Lifetime_seconds <= 0 {
+		return fmt.Errorf("❌ IP生命周期配置无效: %d", config.Ip.Lifetime_seconds)
+	}
+
+	return nil
 }
